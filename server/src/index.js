@@ -12,8 +12,29 @@ import { requireAuth } from './middleware/auth.js';
 
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_URL?.split(',') || 'http://localhost:5173' }));
+const allowedOrigins = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(s => s.trim()) : ['http://localhost:5173'];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.startsWith('http://localhost:')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '1mb' }));
+
+// Ensure database connection for serverless invocations
+app.use(async (_req, _res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 100 }), authRoutes);
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'StockFlow API' }));
 app.use('/api/products', requireAuth, productRoutes);
