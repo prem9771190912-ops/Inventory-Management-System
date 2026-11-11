@@ -19,7 +19,7 @@ router.post('/signup', async (req, res, next) => {
     const organization = await Organization.create({ name: organizationName.trim() });
     const hashed = await bcrypt.hash(password, 12);
     const user = await User.create({ name: name.trim(), email: email.toLowerCase().trim(), password: hashed, organization: organization._id });
-    res.status(201).json({ token: makeToken(user), user: publicUser(user) });
+    res.status(201).json({ token: makeToken(user), user: { id: user._id, name: user.name, email: user.email, organization } });
   } catch (error) { next(error); }
 });
 
