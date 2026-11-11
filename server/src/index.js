@@ -26,5 +26,14 @@ app.use((error, _req, res, _next) => {
 });
 
 const port = process.env.PORT || 5000;
-connectDB().then(() => app.listen(port, () => console.log(`StockFlow API listening on ${port}`)))
-  .catch(error => { console.error('Database connection failed:', error.message); process.exit(1); });
+
+// Start server locally, or export for Vercel serverless
+if (process.env.VERCEL) {
+  // On Vercel: connect to DB eagerly, export app for serverless handler
+  connectDB().catch(error => console.error('Database connection failed:', error.message));
+} else {
+  connectDB().then(() => app.listen(port, () => console.log(`StockFlow API listening on ${port}`)))
+    .catch(error => { console.error('Database connection failed:', error.message); process.exit(1); });
+}
+
+export default app;
